@@ -232,6 +232,13 @@ def hasIpv4Assigned():
     addr = netifaces.ifaddresses(interface)
     return netifaces.AF_INET in addr
 
+def isIpv6LinkLocal():
+    addr = ipv6()[0]
+    if (addr.split(":")[0] == "fe80"):
+        return True
+    else:
+        return False
+
     
 while True:
     lookup4()
@@ -251,16 +258,18 @@ while True:
         time.sleep(60)
     
     cache_ipv4 = ipv4()
-    cache_ipv6 = ipv6()
 
-    if (dns_ipv6 == None or dns_ipv6 not in cache_ipv6) == True:
-        if (dns_ipv6 == None):
-            warn("IPv6 (AAAA Record) not present on Domain {}".format(ddns))
-        else:
-            warn("{} not found in adapter ip {}".format(dns_ipv6, ipv6()))
-        updateIpv6()
-    elif (dns_ipv6 in cache_ipv6):
-        info("Domain AAAA Record looks good")
+    if (isIpv6LinkLocal() == False):
+        cache_ipv6 = ipv6()
+
+        if (dns_ipv6 == None or dns_ipv6 not in cache_ipv6) == True:
+            if (dns_ipv6 == None):
+                warn("IPv6 (AAAA Record) not present on Domain {}".format(ddns))
+            else:
+                warn("{} not found in adapter ip {}".format(dns_ipv6, ipv6()))
+            updateIpv6()
+        elif (dns_ipv6 in cache_ipv6):
+            info("Domain AAAA Record looks good")
 
 
     if (dns_ipv4 == None or dns_ipv4 not in cache_ipv4) == True:

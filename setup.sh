@@ -3,8 +3,8 @@
 read -p 'Token: ' domeneshop_token
 read -p 'Secret: ' domeneshop_secret
 
-sed "s/{TOKEN}/$domeneshop_token/g"
-sed "s/{SECRET}/$domeneshop_secret/g"
+sed -i "s/{TOKEN}/$domeneshop_token/g" dips.py
+sed -i "s/{SECRET}/$domeneshop_secret/g" dips.py
 
 
 pip install dnspython 
@@ -27,7 +27,6 @@ mv ./dips.py /usr/local/dips/dips.py
 cat > /etc/systemd/system/dip.service <<EOL
 [Unit]
 Description=Dynamic IP Service
-After=multi-user.target
 
 [Service]
 Type=simple
