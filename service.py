@@ -13,7 +13,6 @@ import signal
 
 token="{TOKEN}"
 secret="{SECRET}"
-referenceAbs="{REFERENCE_TARGET}"
 
 terminate = False
 threads = []
@@ -274,11 +273,8 @@ class Service:
         signal.signal(signal.SIGINT, signal_handler)
         
         Printy.info("Starting service")
-        if (referenceAbs == "{REFERENCE_TARGET}"):
-            references = json.load(open("reference.json"))
-        else:
-            references = json.load(open(referenceAbs))
-            
+        references = json.load(open("reference.json"))
+
         for device in references:
             domains = self.__toDomainList(device["domains"])
             

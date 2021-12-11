@@ -11,7 +11,7 @@ sed -i "s/{TOKEN}/$domeneshop_token/g" service.py
 sed -i "s/{SECRET}/$domeneshop_secret/g" service.py
 
 referenceAbsPath="/usr/local/dipdup/reference.json"
-sed -i "s/{REFERENCE_TARGET}/$referenceAbsPath/g" service.py
+sed -i "s^reference.json^$referenceAbsPath^g" service.py
 
 
 pip install dnspython 
