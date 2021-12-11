@@ -1,0 +1,27 @@
+[{
+    "interface": "enp1s0f0" ,
+    "ipv4": true,
+    "ipv6": false,
+    "domains": [
+        {
+            "parent": "skjonborg.no",
+            "FQDN": [
+                "skjonborg.no"
+            ]
+        }
+    ]
+},
+{
+    "interface": "enp1s0f1",
+    "ipv4": true,
+    "ipv6": false,
+    "domains": [
+        {
+            "parent": "iktdev.no",
+            "FQDN": [
+                "iktdev.no"
+
+            ]
+        }
+    ]
+}]
