@@ -5,8 +5,11 @@ sudo apt install -y python3-pip
 read -p 'Token: ' domeneshop_token
 read -p 'Secret: ' domeneshop_secret
 
+referenceAbsPath="/usr/local/dipdup/reference.json"
+
 sed -i "s/{TOKEN}/$domeneshop_token/g" service.py
 sed -i "s/{SECRET}/$domeneshop_secret/g" service.py
+sed -i "s/reference.json/$referenceAbsPath/g" service.py
 
 
 pip install dnspython 
