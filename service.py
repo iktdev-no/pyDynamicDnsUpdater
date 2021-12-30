@@ -18,6 +18,7 @@ terminate = False
 threads = []
 
 modify = True # For testing, Set false if actual updates should not be done
+debug = False # Set to true if something is failing
 
 class DomainDto:
     __domain: str = None
@@ -55,6 +56,12 @@ class Printy:
     def warn(values):
         sys.stdout.write(tcolor("WARN\t {}".format(values), "yellow"))
         sys.stdout.write("\n")
+    
+    @staticmethod
+    def debug(values):
+        if (debug == True):
+            sys.stdout.write(tcolor("DEBUG\t {}".format(values), "blue"))
+            sys.stdout.write("\n")
 
     @staticmethod
     def error(values):
@@ -154,7 +161,7 @@ class Registery:
         
         # 
         # path: For Parent/Root "@"
-        # destination: 
+        # destination: IP address or FQDN
         def __setRecord(self, path: str, destination):
             record_Id = self.__recordId(path)
             record = { "host": path, "ttl": 3600, "type": self.__recordType, "data": destination }
@@ -165,7 +172,7 @@ class Registery:
 
             if (record_Id is not None):
                 try:
-                    Printy.info("Updating Domain: {}, with record {}".format(self.__domain, record))
+                    Printy.info("Updating Domain: {} @ {}, on {} @ {}, with record {}".format(self.__domain, self.__domain_id, path, record_Id, record))
                     self.__client.modify_record(self.__domain_id, record_Id, record)
                 except Exception as e:
                     Printy.error("Failed to update Record")
@@ -179,13 +186,16 @@ class Registery:
                     print(e)
 
         def changeRecord(self, FQDN: str, destination: str):
+            Printy.debug("FQDN: {}, Destination: {}, Domain: {}".format(FQDN, destination, self.__domain))
             if (FQDN == self.__domain):
+                Printy.debug("FQDN: {}, == Domain: {}".format(FQDN, self.__domain))
                 self.__setRecord("@", destination)
             else:
                 # Strip out parent domain here
                 domain_pos = FQDN.rfind(self.__domain)
                 if (domain_pos > 0):
                     path = FQDN[0:domain_pos-1]
+                    Printy.debug("FQDN: {}, !== Domain: {}, Path: {}".format(FQDN, self.__domain, path))
                     self.__setRecord(path, destination)
 
         

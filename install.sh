@@ -7,16 +7,8 @@ read -p 'Secret: ' domeneshop_secret
 
 
 
-sed -i "s/{TOKEN}/$domeneshop_token/g" service.py
-sed -i "s/{SECRET}/$domeneshop_secret/g" service.py
-
-referenceAbsPath="/usr/local/dipdup/reference.json"
-sed -i "s^reference.json^$referenceAbsPath^g" service.py
-
-
-pip install dnspython 
-pip install termcolor
-pip install requests
+pip install dnspython -U
+pip install termcolor -U
 pip install domeneshop
 
 systemctl stop dipdup.service
@@ -31,6 +23,14 @@ sleep 10s
 mkdir --parents /usr/local/dipdup/
 cp ./service.py /usr/local/dipdup/service.py
 cp ./reference.json /usr/local/dipdup/reference.json
+
+
+sed -i "s/{TOKEN}/$domeneshop_token/g" /usr/local/dipdup/service.py
+sed -i "s/{SECRET}/$domeneshop_secret/g" /usr/local/dipdup/service.py
+
+referenceAbsPath="/usr/local/dipdup/reference.json"
+sed -i "s^reference.json^$referenceAbsPath^g" /usr/local/dipdup/service.py
+
 
 cat > /etc/systemd/system/dipdup.service <<EOL
 [Unit]
