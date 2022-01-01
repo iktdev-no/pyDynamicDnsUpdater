@@ -157,7 +157,7 @@ class Registery:
                 Printy.error("No {} Record present".format(self.__recordType))
                 return None
             else:
-                return records[0]['id']
+                return entries[0]['id']
         
         # 
         # path: For Parent/Root "@"
@@ -198,12 +198,19 @@ class Registery:
                     Printy.debug("FQDN: {}, !== Domain: {}, Path: {}".format(FQDN, self.__domain, path))
                     self.__setRecord(path, destination)
 
+        def getRecordId(self, path: str):
+            return self.__recordId(path)
         
     def OnARecord(self) -> Record:
         return self.Record(self.__client, self.__domain, self.__domain_id, 'A')
         
     def OnAAAARecord(self) -> Record:
         return self.Record(self.__client, self.__domain , self.__domain_id, 'AAAA')
+    
+    def getDomainId(self):
+        return self.__domain_id
+    def getDomain(self):
+        return self.__domain
         
         
 class Ipy: 
