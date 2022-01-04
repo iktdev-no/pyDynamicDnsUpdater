@@ -16,9 +16,10 @@ secret="{SECRET}"
 
 terminate = False
 threads = []
+delay_minutes = 15
 
 modify = True # For testing, Set false if actual updates should not be done
-debug = False # Set to true if something is failing
+debug = True # Set to true if something is failing
 
 class DomainDto:
     __domain: str = None
@@ -94,7 +95,7 @@ class Lookup:
         if (self.__useIPv4 == False):
             return None
         try:
-            records = self.__resolver.query(domain, 'A')
+            records = self.__resolver.resolve(domain, 'A')
             return self.__lookup(domain, records)
         except Exception as e:
             print(e)
@@ -104,7 +105,7 @@ class Lookup:
         if (self.__useIPv6 == False):
             return None
         try:
-            records = self.__resolver.query(domain, 'AAAA')
+            records = self.__resolver.resolve(domain, 'AAAA')
             return self.__lookup(domain, records)
         except Exception as e:
             print(e)
@@ -300,6 +301,7 @@ class Service:
                 args=(device["interface"], domains, device["ipv4"], device["ipv6"])
             )
             threads.append(thread)
+            Printy.info("Creating thread for interface: {}".format(device["interface"]))
         
     def __toDomainList(self, __item):
         domainList = []
@@ -328,12 +330,14 @@ class Service:
         iterationLock = None
         
         while terminate != True:
-            if (iterationLock is not None and time.time()):
+            if (iterationLock is not None and iterationLock > time.time()):
+                time.sleep(60)
                 continue
                 
             
             # Checks if the interface has a valid IP
             if (ipv4 and ipy.hasIPv4(interface) == False):
+                Printy.debug("No IPv4 found on interface {}".format(interface))
                 ipy.requestDHCP(interface)
             
             currentIPv4 = ipy.getIPv4(interface)
@@ -343,24 +347,27 @@ class Service:
                 domainItem: DomainDto = instance["domain"]
                 domain: str = domainItem.getDomain()
                 for FQDN in domainItem.getFQDN():
+                    Printy.debug("Looking up {} on interface {}".format(FQDN, interface))
                     record = lookup.getByDomain(FQDN)
                     
                     if (ipv4 == True and currentIPv4 is not None and ipy.isPrivate(currentIPv4) == False):
                         if (currentIPv4 == record["ipv4"]):
-                            Printy.info("Domain A Record looks good")
+                            Printy.info("{} @ {} is OK!".format(FQDN, currentIPv4))
                         else:
                             registery: Registery = instance["registery"]
-                            registery.OnARecord().changeRecord(FQDN, currentIPv4) # domains need to be iterated....
+                            registery.OnARecord().changeRecord(FQDN, currentIPv4)
                     
 
                     if (ipv6 == True and currentIPv6 is not None and ipy.isPrivate(currentIPv6) == False):
-                        if (currentIPv4 == record["ipv6"]):
-                            Printy.info("Domain A Record looks good")
+                        if (currentIPv6 == record["ipv6"]):
+                            Printy.info("{} @ {} is OK!".format(FQDN, currentIPv6))
                         else:
                             registery: Registery = instance["registery"]
-                            registery.OnAAAARecord().changeRecord(FQDN, currentIPv6) # domains need to be iterated....
+                            registery.OnAAAARecord().changeRecord(FQDN, currentIPv6)
                             
-            iterationLock = time.time() + datetime.timedelta(minutes=15).seconds
+            iterationLock = time.time() + datetime.timedelta(minutes=delay_minutes).seconds
+            Printy.debug("Next check will occur @ {}".format(datetime.datetime.fromtimestamp(iterationLock).strftime("%d.%m.%Y %H:%M")))
+            
             
         Printy.info("Exited watch on interface {}".format(interface))
             
