@@ -14,6 +14,7 @@ import signal
 token="{TOKEN}"
 secret="{SECRET}"
 
+runDhcp = False
 terminate = False
 threads = []
 delay_minutes = 15
@@ -263,6 +264,8 @@ class Ipy:
         return self.__ipv6(self.__interface(name))
 
     def requestDHCP(self, name: str) -> bool:
+        if (runDhcp is False):
+            return
         dh = subprocess.Popen(["dhclient", "-i", name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = dh.communicate()
 
@@ -292,8 +295,12 @@ class Service:
         
         Printy.info("Starting service")
         references = json.load(open("reference.json"))
-
-        for device in references:
+        
+        global runDhcp
+        runDhcp = references["dhcp"]
+        
+        adapters = references["adapter"]
+        for device in adapters:
             domains = self.__toDomainList(device["domains"])
             
             thread = Thread(
