@@ -1,4 +1,4 @@
-# Dynamic Dns Ip Updater
+# Dynamic Ip Dns Updater
 Dynamic IP - Dns Updater: Linux (systemd) service that pulls dns record and verifies that the IP on dns and IP on nic is the same
 
 Make sure that your replace the domain and FQDN in the reference.json file as this is tied to my setup, and won't work
