@@ -26,10 +26,11 @@ class Registry:
         if (len(domains) == 0):
             logging.error(f"No dmains found using domain: {self.__domain} obtained from FQDN: {self.fqdn}")
             return None
-        record = next(filter(lambda entry: entry['domain'] == self.__domain, domains))
+        record = next(filter(lambda entry: entry['domain'] == self.__domain, domains), None)
         if record is not None:
             return record['id']
         else:
+            logging.error(f"Could not obtain domainId using {self.__domain}")
             return None  
     
     def __find_recordId(self, fqdn: str, type: str = "A") -> int | None:
@@ -43,10 +44,15 @@ class Registry:
             return None
         
         records = self.__client.get_records(self.__domain_id)
-        record = next(filter(lambda record: record["host"] == path and record["type"] == type, records))
+        if (len(records) == 0):
+            logging.error(f"Records obtained using domainId {self.__domain_id} yielded 0 results and can't be used")
+            return None
+
+        record = next(filter(lambda record: record["host"] == path and record["type"] == type, records), None)
         if record is not None:
             return record["id"]
         else:
+            logging.error(f"Could not find a matching record for FQDN: {fqdn} at path {path}")
             return None
 
     def get_path(self, fqdn: str) -> str | None:
