@@ -301,22 +301,27 @@ create_services() {
     rm "/etc/systemd/system/$service_name"
     systemctl daemon-reload
 
-    echo "Creating Dynamic Dns Updater Runner"
+    echo "Creating Dynamic Dns Updater Runner" 
+
     cat > "$install_location/service.py" <<EOL
 from DynamicDnsUpdater import DynamicDnsUpdater
-reference = "$install_location/reference.json"
-auth = "$install_location/auth.json"
+reference = "reference.json"
+auth = "auth.json"
 service = DynamicDnsUpdater(reference, auth)
 service.start()
-EOL    
+EOL
 
-echo "Creating DDNSUHook"
+
+    sed -i "s^reference.json^$install_location/reference.json^g" "$install_location/service.py"
+    sed -i "s^auth.json^$install_location/auth.json^g" "$install_location/service.py"
+
+    echo "Creating DDNSUHook"
 
     echo '
 #! /bin/bash
 
 # Dynamic Dns Updater Hook (DDNSHook)
-# A component of DynamicRoutingUpdater
+# A component of DynamicDnsUpdater
 # 
 # The purpose of DDNSHook is to be notified by the system when there are changes to net network interface
 # If this script is placed correctly inside a hook folder for the network manager, 
@@ -337,15 +342,15 @@ fi
 ' | tee /etc/networkd-dispatcher/routable.d/ddns-hook.sh > /usr/lib/networkd-dispatcher/routable.d/ddns-hook.sh > /etc/NetworkManager/dispacher.d/ddns-hook.sh 
 
 
-    echo "Creating DRU Service"
+    echo "Creating DDNSU Service"
     cat > "/etc/systemd/system/$service_name" <<EOL
 [Unit]
-Description=Dynamic Routing Updater - Table flipper
+Description=Dynamic Dns Updater
 
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/local/dynamic-routing-updater/venv/bin/python -u /usr/local/dynamic-routing-updater/service.py
+ExecStart=/usr/local/dynamic-dns-updater/venv/bin/python -u /usr/local/dynamic-dns-updater/service.py
 Environment=PYTHONUNBUFFERED=1
 
 

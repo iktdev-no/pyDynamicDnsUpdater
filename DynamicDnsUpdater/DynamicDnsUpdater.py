@@ -18,6 +18,8 @@ import netifaces # type: ignore
 
 class DynamicDnsUpdater:
 
+    ddnsEntries: List[DDNSEntry] = []
+    
     networkHookHandler: NetworkHookHandler
     ipDnsPoller: IpDnsPoller
 
@@ -45,10 +47,10 @@ class DynamicDnsUpdater:
         reference: dict = json.load(open(reference))
 
         authData = self.parse_auth(auth)
-        ddnsEntries = self.parse_reference(reference)
+        self.ddnsEntries = self.parse_reference(reference)
 
-        self.networkHookHandler = NetworkHookHandler(auth=authData, config=ddnsEntries)
-        self.ipDnsPoller = IpDnsPoller(auth=authData, ddnsEntries=ddnsEntries)
+        self.networkHookHandler = NetworkHookHandler(auth=authData, config=self.ddnsEntries)
+        self.ipDnsPoller = IpDnsPoller(auth=authData, ddnsEntries=self.ddnsEntries)
 
         signal.signal(signal.SIGINT, self.__stop)
 
@@ -74,7 +76,8 @@ class DynamicDnsUpdater:
         """
         availableNetworkAdapters = netifaces.interfaces()
         logging.info("Running pre-check")
-        if set(self.nics).issubset(set(availableNetworkAdapters)):
+        nics = [entry.interface for entry in self.ddnsEntries]
+        if set(nics).issubset(set(availableNetworkAdapters)):
             logging.info("Configured interfaces are present!")
         else:
             logging.error("Configured interfaces are not present!")
