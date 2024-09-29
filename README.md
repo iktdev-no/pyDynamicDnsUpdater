@@ -3,27 +3,28 @@ Dynamic IP - Dns Updater: Linux (systemd) service that pulls dns record and veri
 
 Make sure that your replace the domain and FQDN in the reference.json file as this is tied to my setup, and won't work
 
-Token and Secret is required when you run the install.sh or setup.sh
+Token and Secret is required when you run the install.sh
+# How to install
 
-install.sh installs the dip-dup service which is a multi-domain service.
-setup.sh is a single sub-domain service.
-
-Example of reference.json
-```json
-[
-    {
-        "interface": "wan0",
-        "ipv4": true,
-        "ipv6": false,
-        "domains": [
-            {
-                "parent": "example.com",
-                "FQDN": [
-                    "example.com",
-                    "one.example.com"
-                ]
-            }
-        ]
-    }
-]
+## Dependencies
+```shell
+net-tools
 ```
+
+
+To install and start DRU
+- Clone the project 
+- Modify reference.json
+ - `./install.sh` 
+
+</br>
+Make sure that you run the script with sudo or as root, as the script needs access. <br>
+
+Or you can do the following:
+```shell
+curl -sSL -o install.sh https://raw.githubusercontent.com/bskjon/pyDynamicDnsUpdater/master/install.sh && sudo bash install.sh
+```
+This will request you to define table name and select interface thrould selection.
+
+
+<br>
