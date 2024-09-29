@@ -76,7 +76,8 @@ class Registry:
         type = record["type"]
         recordId = self.__find_recordId(fqdn=fqdn, type=type)
         if (recordId is None):
-            raise RecordNotFoundException(f"Could not find record or id of record based on the FQDN {fqdn} with type {type}.\n\tPlease ensure that the record already exists at the domain registar")
+            message = f"\nCould not find record or id of record based on the FQDN {fqdn} with type {type}.\n\tPlease ensure that the record already exists at the domain registar"
+            raise RecordNotFoundException(message=message)
         try:
             self.__client.modify_record(self.__domain_id, recordId, record)
             return True
