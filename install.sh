@@ -20,8 +20,6 @@ prerequisites() {
 
     source "$install_location/venv/bin/activate"
 
-    return
-
     echo "Installing dependencies"
     # Sjekk om pakken er installert
     if python -c "import $package_name" &> /dev/null; then
@@ -114,8 +112,6 @@ _getSelectedInterfaces() {
     fi
 }
 
-
-
 _configureInterfaceProtocols() {
     local iface=$1
     protocol_choices=$(whiptail --title "Configure $iface" --checklist \
@@ -154,6 +150,9 @@ manage_domains() {
             "2") remove_domain ;;
             "3") edit_domain ;;
             "4") break ;;
+            *) echo "User aborted.. Exiting.."
+                exit 1 
+            ;;
         esac
     done
 
@@ -170,27 +169,47 @@ add_domain() {
 # Funksjon for å fjerne domener
 remove_domain() {
     if [ ${#domains[@]} -eq 0 ]; then
+        echo "Ingen domener å fjerne"
         whiptail --msgbox "Ingen domener å fjerne." 10 60
     else
-        remove_domains=$(whiptail --title "Fjern domene" --checklist \
-        "Velg domenene du vil fjerne for $iface:" 15 60 6 \
-        $(for domain in "${domains[@]}"; do echo "$domain" ""; done) 3>&1 1>&2 2>&3)
-        
-        for domain in $remove_domains; do
-            domain=$(echo "$domain" | sed 's/"//g')
-            domains=("${domains[@]/$domain}")
+        display_list=()
+        for domain in "${domains[@]}"; do
+            # Lagre interface med IP-er som beskrivelse
+            display_list+=("$domain" " " OFF)
         done
+
+        # Bruker whiptail for å velge domener å fjerne
+        remove_domains=$(whiptail --title "Fjern domene" --checklist "Velg domenene du vil fjerne for $iface:" 15 60 6 "${display_list[@]}" 3>&1 1>&2 2>&3)
+
+        if [ -n "$remove_domains" ]; then
+            # Fjern valgte domener fra arrayen
+            for domain in $remove_domains; do
+                domain=$(echo "$domain" | sed 's/"//g')  # Fjern anførselstegn
+                for i in "${!domains[@]}"; do
+                    if [ "${domains[i]}" = "$domain" ]; then
+                        unset 'domains[i]'  # Fjern elementet
+                    fi
+                done
+            done
+            # Fjern tomme elementer fra arrayen
+            domains=("${domains[@]}")
+        fi
     fi
 }
 
 # Funksjon for å redigere et domene
 edit_domain() {
     if [ ${#domains[@]} -eq 0 ]; then
+        echo "Ingen domener å redigere"
         whiptail --msgbox "Ingen domener å redigere." 10 60
     else
-        selected_domain=$(whiptail --title "Rediger domene" --menu \
-        "Velg et domene å redigere for $iface:" 15 60 6 \
-        $(for domain in "${domains[@]}"; do echo "$domain" ""; done) 3>&1 1>&2 2>&3)
+        display_list=()
+        for domain in "${domains[@]}"; do
+            # Lagre interface med IP-er som beskrivelse
+            display_list+=("$domain" " ")
+        done
+
+        selected_domain=$(whiptail --title "Rediger domene" --menu  "Velg et domene å redigere for $iface:" 15 60 6 "${display_list[@]}" 3>&1 1>&2 2>&3)
 
         selected_domain=$(echo "$selected_domain" | sed 's/"//g')
         edited_domain=$(whiptail --inputbox "Rediger domene $selected_domain for $iface:" 10 60 "$selected_domain" 3>&1 1>&2 2>&3)
@@ -349,13 +368,13 @@ EOL
 
     systemctl daemon-reload
 
-#    systemctl enable $service_name
-#    systemctl start $service_name
+    systemctl enable $service_name
+    systemctl start $service_name
 
-#    systemctl status $service_name
+    systemctl status $service_name
 
     echo "Done!"
- #   journalctl -exfu dynamic-routing-updater
+    journalctl -exfu dynamic-routing-updater
     sudo chmod -R 755 "$install_location"
 
 }
@@ -387,7 +406,7 @@ setup() {
     create_services
 
     echo "Done!"
- #   journalctl -exfu dynamic-routing-updater
+    journalctl -exfu dynamic-routing-updater
     sudo chmod -R 755 $install_location    
 }
 
