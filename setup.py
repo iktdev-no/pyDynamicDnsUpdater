@@ -11,7 +11,7 @@ setup(
     name="pyDynamicDnsUpdater",
     long_description_content_type='text/markdown',
     long_description=readme(),
-    packages=["pyDynamicDnsUpdater"],
+    packages=["DynamicDnsUpdater"],
     install_requires=[
         "netifaces>=0.11.0",
         "netaddr>=0.8.0",
