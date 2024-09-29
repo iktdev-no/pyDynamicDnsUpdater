@@ -12,7 +12,7 @@ from DynamicDnsUpdater.Dns.Registry import Registry
 from DynamicDnsUpdater.Dns.Resolve import Resolve
 from .objects import IpData, Auth, DDNSEntry
 from .Ip.NetworkAdapter import NetworkAdapter
-from util import get_domain_from_fqdn
+from .util import get_domain_from_fqdn
 
 logging.basicConfig(level=logging.INFO)
 
