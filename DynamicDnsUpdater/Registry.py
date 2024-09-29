@@ -1,7 +1,7 @@
 import ipaddress
 import re
 from domeneshop import Client
-from ..objects import RecordNotFoundException, NotAValidIpException, Auth
+from .objects import RecordNotFoundException, NotAValidIpException, Auth
 
 class Registry:
     __client: Client | None = None

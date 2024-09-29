@@ -1,6 +1,6 @@
 import json
 import subprocess
-from ..objects import IpInfo
+from .objects import IpInfo
 from typing import Optional
 
 class AddressInfo:

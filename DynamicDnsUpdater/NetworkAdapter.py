@@ -3,7 +3,7 @@ import re
 import netifaces # type: ignore
 from netaddr import IPAddress # type: ignore
 from typing import List, Optional
-from ..objects import IpData, Netstated
+from .objects import IpData, Netstated
 import subprocess
 
 logging.basicConfig(level=logging.INFO)

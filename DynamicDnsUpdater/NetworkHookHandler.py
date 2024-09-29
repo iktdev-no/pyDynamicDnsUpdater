@@ -7,10 +7,10 @@ import queue
 from typing import List
 import os, sys, time, errno
 
-from DynamicDnsUpdater.Dns.Registry import Registry
-from DynamicDnsUpdater.Dns.Resolve import Resolve
+from .Registry import Registry
+from .Resolve import Resolve
 from .objects import IpData, Auth, DDNSEntry
-from .Ip.NetworkAdapter import NetworkAdapter
+from .NetworkAdapter import NetworkAdapter
 from .util import get_domain_from_fqdn
 
 logging.basicConfig(level=logging.INFO)

@@ -1,7 +1,7 @@
 import logging
 import dns.resolver
 from dns.resolver import Answer
-from ..objects import LookupResult
+from .objects import LookupResult
 
 from typing import List
 logging.basicConfig(level=logging.INFO)
