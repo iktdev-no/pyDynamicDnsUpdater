@@ -48,9 +48,9 @@ class IpDnsPoller:
             ipdata = adapter.getIpData()
             if (ipdata.isValid()):
                 self.__validateDnsRecordAgainstIpReceivedAndUpdate(entry, ipdata)
-        iterationLock = time.time() + datetime.timedelta(minutes=iteration_delay).seconds
-        logging.info("Next automatic check will occur @ {}".format(datetime.datetime.fromtimestamp(iterationLock).strftime("%d.%m.%Y %H:%M")))
-        time.sleep(60*iteration_delay)
+            iterationLock = time.time() + datetime.timedelta(minutes=iteration_delay).seconds
+            logging.info("Next automatic check will occur @ {}".format(datetime.datetime.fromtimestamp(iterationLock).strftime("%d.%m.%Y %H:%M")))
+            time.sleep(60*iteration_delay)
             
 
     def __validateDnsRecordAgainstIpReceivedAndUpdate(self, ddnsEntry: DDNSEntry, ipdata: IpData) -> None:
@@ -64,7 +64,7 @@ class IpDnsPoller:
                     registry.update_record(invalidPointer, record)
             else:
                 indented_string = "\n\t".join(f"{domain}" for domain in ddnsEntry.domains)
-                logging.info(f"All pointers4 ok for\n{indented_string}")
+                logging.info(f"All pointers4 ok for\n\t{indented_string}")
         if (ddnsEntry.ipv6 == True):
             invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
             if (len(invalidPointers) > 0):
@@ -75,7 +75,7 @@ class IpDnsPoller:
                     registry.update_record(invalidPointer, record)
             else:
                 indented_string = "\n\t".join(f"{domain}" for domain in ddnsEntry.domains)
-                logging.info(f"All pointers6 ok for\n{indented_string}")
+                logging.info(f"All pointers6 ok for\n\t{indented_string}")
 
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:
         invalids: List[str] = []
