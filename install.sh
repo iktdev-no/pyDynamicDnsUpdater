@@ -1,5 +1,9 @@
 #!/bin/bash
 
+package_name="pyDynamicDnsUpdater"
+install_location="/usr/local/dynamic-dns-updater"
+service_name="dynamic-dns-updater.service"
+
 declare -A interface_config
 declare -A interface_domains
 
@@ -7,10 +11,44 @@ prerequisites() {
 
     sudo apt install -y python3-pip python3-venv
     mkdir --parents /usr/local/dynamic-dns-updater/
-    python3 -m venv /usr/local/dynamic-dns-updater/venv
-    source /usr/local/dynamic-dns-updater/venv/bin/activate
+    sudo chmod -R 0777 /usr/local/dynamic-dns-updater/
+
+    if [ ! -d "$install_location/venv" -o ! -f "$install_location/venv/bin/activate" ]; then
+        rm -r "$install_location/venv"
+        python3 -m venv "$install_location/venv"
+    fi
+
+    source "$install_location/venv/bin/activate"
+
+    return
 
     echo "Installing dependencies"
+    # Sjekk om pakken er installert
+    if python -c "import $package_name" &> /dev/null; then
+        # Lagre gjeldende versjon
+        current_version=$(pip show $package_name | grep Version | awk '{print $2}')
+        echo "Gjeldende versjon av $package_name er $current_version"
+    else
+        echo "$package_name er ikke installert."
+    fi
+
+    # Installer eller oppdater pakken
+    pip install $package_name -U
+
+    # Sjekk om installasjonen var vellykket
+    if [ $? -eq 0 ]; then
+        # Sjekk om versjonsnummeret har endret seg
+        new_version=$(pip show $package_name | grep Version | awk '{print $2}')
+        if [ "$current_version" != "$new_version" ]; then
+            echo "$package_name ble oppdatert fra versjon $current_version til $new_version."
+        else
+            echo "$package_name var allerede på den nyeste versjonen $new_version."
+        fi
+    else
+        echo "Feil under installasjon eller oppdatering av $package_name. Avbryter."
+        exit 1
+    fi
+    deactivate
 }
 
 
@@ -19,7 +57,7 @@ recordAuthentication() {
     secret=$(whiptail --inputbox "Secret:" 10 60 --title "Autentiserings token" 3>&1 1>&2 2>&3)
 
     json=$(jq -n --arg token "$token" --arg secret "$secret" '{token: $token, secret: $secret}')
-
+    echo $json > "$install_location/auth.json"
 }
 
 _getSelectedInterfaces() {
@@ -45,13 +83,13 @@ _getSelectedInterfaces() {
         ip_addresses=$(echo "$ifaces" | grep "^$iface" | awk -F'[()]' '{print $2}' | xargs | sed 's/ /, /g')
         
         # Lagre interface med IP-er som beskrivelse
-        iface_list+=("$iface" "$ip_addresses" ON)
+        iface_list+=("$iface" "$ip_addresses" OFF)
     done
 
     local selected_adapters=""
     while true; do
         # Bruk whiptail for å vise en dialog med interfaces
-        selected_adapters=$(whiptail --title "Select Network Interface" --checklist "Choose interfaces:" 20 120 20 "${iface_list[@]}" 3>&1 1>&2 2>&3)
+        selected_adapters=$(whiptail --title "Select Network Interface" --checklist "Choose interfaces:" 20 100 10 "${iface_list[@]}" 3>&1 1>&2 2>&3)
         exit_status=$?
 
         if [ $exit_status != 0 ]; then
@@ -83,7 +121,7 @@ _configureInterfaceProtocols() {
     protocol_choices=$(whiptail --title "Configure $iface" --checklist \
     "Velg hvilke protokoller som skal være aktive for $iface:" 10 60 2 \
     "IPv4" "Aktiver IPv4" ON \
-    "IPv6" "Aktiver IPv6" ON 3>&1 1>&2 2>&3)
+    "IPv6" "Aktiver IPv6" OFF 3>&1 1>&2 2>&3)
 
     if echo "$protocol_choices" | grep -q "IPv4"; then
         interface_config["$iface,ipv4"]=true
@@ -166,21 +204,166 @@ edit_domain() {
     fi
 }
 
-# Funksjon for å oppsummere konfigurasjonen
-summarize_configuration() {
-    echo "Konfigurasjon av valgte interfaces:"
+createReference() {
+    local json_output="{"
+
+    # Iterer over de valgte adapterne
+    for iface in $selected_adapters; do
+        # Fjern eventuelle parenteser fra interface-navnet
+        iface=$(echo "$iface" | awk -F'(' '{print $1}' )
+        
+        clean_iface=$(echo "$iface" | tr -d '"')
+
+        # Legg til interface i JSON-strukturen
+        json_output+="\"$clean_iface\": {"
+        
+        # Legg til IPv4 og IPv6 konfigurasjoner
+        json_output+="\"ipv4\": ${interface_config["$iface,ipv4"]},"
+        json_output+="\"ipv6\": ${interface_config["$iface,ipv6"]},"
+        
+        # Legg til domener
+        json_output+="\"domains\": ["
+        domains=${interface_domains[$iface]}
+        
+        # Split domener basert på komma og legg til i JSON
+        IFS=', ' read -ra domain_array <<< "$domains"
+        for domain in "${domain_array[@]}"; do
+            json_output+="\"$domain\","
+        done
+        
+        # Fjern siste komma
+        json_output=$(echo "$json_output" | sed 's/,$//')
+        
+        # Lukk domains array og interface object
+        json_output+="]},"
+    done
+
+    # Fjern siste komma og lukk JSON-strukturen
+    json_output=$(echo "$json_output" | sed 's/,$//')
+    json_output+="}"
+
+    # Returner JSON-strukturen
+    echo "$json_output"
+}
+
+recordReference() {
+    selected_adapters=$(_getSelectedInterfaces)
+        
+    # Check if the selection was successful
+    if [ $? -ne 0 ]; then
+        echo "No interfaces selected or user cancelled."
+        exit 1
+    fi
+
+
+    for iface in $selected_adapters; do
+        # Fjern eventuell parentes og IP-adresse fra valgte adaptere
+        iface=$(echo "$iface" | awk -F'(' '{print $1}')
+        _configureInterfaceProtocols "$iface"
+    done
+
+    # Spør om domener for hvert interface
     for iface in $selected_adapters; do
         iface=$(echo "$iface" | awk -F'(' '{print $1}')
-        echo "Interface: $iface"
-        echo "  IPv4 aktiv: ${interface_config["$iface,ipv4"]}"
-        echo "  IPv6 aktiv: ${interface_config["$iface,ipv6"]}"
-        echo "  Domener: ${interface_domains[$iface]}"
+        manage_domains "$iface"
     done
+    json_output=$(createReference)
+
+    echo $json_output > "$install_location/reference.json"
+
+
 }
 
 
+create_services() {
+    systemctl stop $service_name
+    systemctl disable $service_name
+
+    rm "/etc/systemd/system/$service_name"
+    systemctl daemon-reload
+
+    echo "Creating Dynamic Dns Updater Runner"
+    cat > "$install_location/service.py" <<EOL
+from DynamicDnsUpdater import DynamicDnsUpdater
+reference = "$install_location/reference.json"
+auth = "$install_location/auth.json"
+service = DynamicDnsUpdater(reference, auth)
+service.start()
+EOL    
+
+echo "Creating DDNSUHook"
+
+    echo '
+#! /bin/bash
+
+# Dynamic Dns Updater Hook (DDNSHook)
+# A component of DynamicRoutingUpdater
+# 
+# The purpose of DDNSHook is to be notified by the system when there are changes to net network interface
+# If this script is placed correctly inside a hook folder for the network manager, 
+# the network manager will call up this script whith the interface that has been updated or altered
+#
+# This script will then proceed to update a temporary file which the service DDNS will watch and respond to
+#
+
+IFACE = $1
+STATUS = $2
+
+
+echo "DDNS - DynamicIpWatcherAction: Registered change to network adpater $IFACE"
+
+if [ ! -z $IFACE ]; then
+    echo -e "$IFACE\n" >> /tmp/ddns-hook
+fi
+' | tee /etc/networkd-dispatcher/routable.d/ddns-hook.sh > /usr/lib/networkd-dispatcher/routable.d/ddns-hook.sh > /etc/NetworkManager/dispacher.d/ddns-hook.sh 
+
+
+    echo "Creating DRU Service"
+    cat > /etc/systemd/system/dynamic-routing-updater.service <<EOL
+[Unit]
+Description=Dynamic Routing Updater - Table flipper
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/local/dynamic-routing-updater/venv/bin/python -u /usr/local/dynamic-routing-updater/service.py
+Environment=PYTHONUNBUFFERED=1
+
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    CHMOD_FILES=(
+    "/etc/networkd-dispatcher/routable.d/ddns-hook.sh"
+    "/usr/lib/networkd-dispatcher/routable.d/ddns-hook.sh"
+    "/etc/NetworkManager/dispacher.d/ddns-hook.sh"
+    "$install_location/service.py"
+    )
+
+    for FILE in "${CHMOD_FILES[@]}"; do
+        chmod 755 $FILE
+        chmod +x $FILE
+    done
+
+    chown root:root "$install_location/service.py"
+
+    systemctl daemon-reload
+
+#    systemctl enable $service_name
+#    systemctl start $service_name
+
+#    systemctl status $service_name
+
+    echo "Done!"
+ #   journalctl -exfu dynamic-routing-updater
+    sudo chmod -R 755 "$install_location"
+
+}
+
 setup() {
-    if [ -f "./auth.json" ]; then
+    prerequisites
+
+    if [ -f "$install_location/auth.json" ]; then
         if whiptail --title "Eksisterende autentisering" --yesno "Vil du oppdatere autentiseringen?" 10 60; then
             recordAuthentication
         else
@@ -191,104 +374,22 @@ setup() {
     fi
 
 
-    if [ -f "./reference.json" ]; then
-        echo "Using existing reference.json"
-    else
-        selected_adapters=$(_getSelectedInterfaces)
-        
-        # Check if the selection was successful
-        if [ $? -ne 0 ]; then
-            echo "No interfaces selected or user cancelled."
-            exit 1
+    if [ -f "$install_location/reference.json" ]; then
+        if whiptail --title "Eksisterende konfigurasjon" --yesno "Vil du oppdatere konfigurasjonen?" 10 60; then
+            recordReference
+        else
+            echo "Bruker eksisterende reference."
         fi
-
-
-        for iface in $selected_adapters; do
-            # Fjern eventuell parentes og IP-adresse fra valgte adaptere
-            iface=$(echo "$iface" | awk -F'(' '{print $1}')
-            _configureInterfaceProtocols "$iface"
-        done
-
-        # Spør om domener for hvert interface
-        for iface in $selected_adapters; do
-            iface=$(echo "$iface" | awk -F'(' '{print $1}')
-            manage_domains "$iface"
-        done
-        summarize_configuration
+    else
+        recordReference
     fi
+
+    create_services
+
+    echo "Done!"
+ #   journalctl -exfu dynamic-routing-updater
+    sudo chmod -R 755 $install_location    
 }
 
 
 setup
-
-
-
-
-
-
-
-
-
-
-
-# sudo apt install -y python3-pip
-# 
-# read -p 'Token: ' domeneshop_token
-# read -p 'Secret: ' domeneshop_secret
-# 
-# 
-# 
-# pip install dnspython -U
-# pip install termcolor -U
-# pip install domeneshop
-# 
-# systemctl stop dipdup.service
-# systemctl disable dipdup.service
-# 
-# rm /etc/systemd/system/dipdup.service
-# 
-# systemctl daemon-reload
-# 
-# sleep 10s
-# 
-# mkdir --parents /usr/local/dipdup/
-# cp ./service.py /usr/local/dipdup/service.py
-# cp ./reference.json /usr/local/dipdup/reference.json
-# 
-# 
-# sed -i "s/{TOKEN}/$domeneshop_token/g" /usr/local/dipdup/service.py
-# sed -i "s/{SECRET}/$domeneshop_secret/g" /usr/local/dipdup/service.py
-# 
-# referenceAbsPath="/usr/local/dipdup/reference.json"
-# sed -i "s^reference.json^$referenceAbsPath^g" /usr/local/dipdup/service.py
-# 
-# 
-# cat > /etc/systemd/system/dipdup.service <<EOL
-# [Unit]
-# Description=Dynamic IP Service - Dns Updater
-# 
-# [Service]
-# Type=simple
-# Restart=always
-# ExecStart=/usr/bin/python3 -u /usr/local/dipdup/service.py
-# Environment=PYTHONUNBUFFERED=1
-# 
-# 
-# [Install]
-# WantedBy=multi-user.target
-# EOL
-# 
-# 
-# chmod 700 /usr/local/dipdup/service.py
-# chmod +x /usr/local/dipdup/service.py
-# chown root:root /usr/local/dipdup/service.py
-# 
-# 
-# systemctl daemon-reload
-# 
-# systemctl enable dipdup.service
-# systemctl start dipdup.service
-# 
-# systemctl status dipdup.service
-# 
-# 
