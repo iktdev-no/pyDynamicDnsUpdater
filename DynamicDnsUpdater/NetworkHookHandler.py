@@ -111,12 +111,11 @@ class NetworkHookHandler:
     def stop(self) -> None:
         """
         """
+        logging.info("Setting stop flag for NetworkHookHandler")
         with open(self.pipe_path, 'w') as fifo:
             fifo.write('stop')
         logging.info("Setting stop flag")
         self.stopFlag.set()
-        for thread in self.hookThreads:
-            thread.join()
         logging.info("Threads stopped..")            
         
     def __onThreadStart(self, targetName: str) -> None:
@@ -156,18 +155,16 @@ class NetworkHookHandler:
         if (ddnsEntry.ipv4 == True):
             invalidPointers = self.__find_invalid_pointer4(ipdata.ip, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
-                domain = get_domain_from_fqdn(invalidPointer)
-                registry = Registry(domain=domain, auth=self.auth)
-                record = registry.build_record(fqdn=domain, ip=ipdata.ip)
-                logging.info(f"Preparing record for top domain {domain} and FQDN {invalidPointer}\n\t -> {record}")
+                registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ip)
+                logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
                 registry.update_record(invalidPointer, record)
         if (ddnsEntry.ipv6 == True):
             invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
-                domain = get_domain_from_fqdn(invalidPointer)
-                registry = Registry(domain=domain, auth=self.auth)
-                record = registry.build_record(fqdn=domain, ip=ipdata.ipv6)
-                logging.info(f"Preparing record for top domain {domain} and FQDN {invalidPointer}\n\t -> {record}")
+                registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ipv6)
+                logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
                 registry.update_record(invalidPointer, record)
 
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:

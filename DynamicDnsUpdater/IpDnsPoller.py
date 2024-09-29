@@ -40,6 +40,7 @@ class IpDnsPoller:
             thread.start()
 
     def stop(self) -> None:
+        logging.info("Setting stop flag for IpDnsPoller")
         self.stopFlag.set()
 
     def __monitor(self, entry: DDNSEntry) -> None:
@@ -58,18 +59,16 @@ class IpDnsPoller:
         if (ddnsEntry.ipv4 == True):
             invalidPointers = self.__find_invalid_pointer4(ipdata.ip, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
-                domain = get_domain_from_fqdn(invalidPointer)
-                registry = Registry(domain=domain, auth=self.auth)
-                record = registry.build_record(fqdn=domain, ip=ipdata.ip)
-                logging.info(f"Preparing record for top domain {domain} and FQDN {invalidPointer}\n\t -> {record}")
+                registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ip)
+                logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
                 registry.update_record(invalidPointer, record)
         if (ddnsEntry.ipv6 == True):
             invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
-                domain = get_domain_from_fqdn(invalidPointer)
-                registry = Registry(domain=domain, auth=self.auth)
-                record = registry.build_record(fqdn=domain, ip=ipdata.ipv6)
-                logging.info(f"Preparing record for top domain {domain} and FQDN {invalidPointer}\n\t -> {record}")
+                registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ipv6)
+                logging.info(f"Preparing record forFQDN {invalidPointer}\n\t -> {record}")
                 registry.update_record(invalidPointer, record)
 
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:

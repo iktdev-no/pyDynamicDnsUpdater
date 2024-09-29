@@ -16,7 +16,8 @@ setup(
         "netifaces>=0.11.0",
         "netaddr>=0.8.0",
         "dnspython>=2.4.0",
-        "domeneshop>=0.4.3"
+        "domeneshop>=0.4.3",
+        "tldextract>=5.1.2"
     ],
     version=version.__version__,
     description="""

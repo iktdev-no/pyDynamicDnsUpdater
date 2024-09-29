@@ -2,20 +2,23 @@ import ipaddress
 import re
 from domeneshop import Client
 from .objects import RecordNotFoundException, NotAValidIpException, Auth
+import tldextract
 
 class Registry:
     __client: Client | None = None
-
     __domain: str | None = None
     __domain_id: int | None = None
+    fqdn: str | None = None
 
-    def __init__(self, domain: str, auth: Auth) -> None:
-        self.__domain = domain
+    def __init__(self, fqdn: str, auth: Auth) -> None:
+        self.fqdn = fqdn
         self.__client = Client(token=auth.token, secret=auth.secret)
+        self.__domain = tldextract.extract(self.fqdn).domain
         self.__domain_id = self.__resolveDomainId()
 
     def __resolveDomainId(self) -> int:
         domains = self.__client.get_domains()
+        
         record = next(filter(lambda entry: entry['domain'] == self.__domain, domains))
         if record is not None:
             return record['id']
@@ -41,6 +44,7 @@ class Registry:
 
     def get_path(self, fqdn: str) -> str | None:
         path: str | None = None
+
         if (fqdn == self.__domain):
             path = "@"
         else:
