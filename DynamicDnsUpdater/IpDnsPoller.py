@@ -56,7 +56,7 @@ class IpDnsPoller:
     def __validateDnsRecordAgainstIpReceivedAndUpdate(self, nic: str, ipdata: IpData) -> None:
         ddnsEntry = next(filter(lambda entry: entry.interface == nic, self.ddnsEntries))
         if (ddnsEntry.ipv4 == True):
-            invalidPointers = self.__find_invalid_pointer4(ddnsEntry.domains)
+            invalidPointers = self.__find_invalid_pointer4(ipdata.ip, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
                 domain = get_domain_from_fqdn(invalidPointer)
                 registry = Registry(domain=domain, auth=self.auth)
@@ -64,7 +64,7 @@ class IpDnsPoller:
                 logging.info(f"Preparing record for top domain {domain} and FQDN {invalidPointer}\n\t -> {record}")
                 registry.update_record(invalidPointer, record)
         if (ddnsEntry.ipv6 == True):
-            invalidPointers = self.__find_invalid_pointer6(ddnsEntry.domains)
+            invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
             for invalidPointer in invalidPointers:
                 domain = get_domain_from_fqdn(invalidPointer)
                 registry = Registry(domain=domain, auth=self.auth)
