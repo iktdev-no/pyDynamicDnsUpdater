@@ -8,7 +8,7 @@ from threading import Thread
 from DynamicDnsUpdater.IpDnsPoller import IpDnsPoller
 from .version import __version__
 
-from objects import DDNSEntry, Auth
+from .objects import DDNSEntry, Auth
 from typing import List
 
 from .NetworkHookHandler import NetworkHookHandler
