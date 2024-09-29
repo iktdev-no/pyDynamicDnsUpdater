@@ -3,6 +3,10 @@ import re
 from domeneshop import Client
 from .objects import RecordNotFoundException, NotAValidIpException, Auth
 import tldextract
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 
 class Registry:
     __client: Client | None = None
@@ -13,12 +17,15 @@ class Registry:
     def __init__(self, fqdn: str, auth: Auth) -> None:
         self.fqdn = fqdn
         self.__client = Client(token=auth.token, secret=auth.secret)
-        self.__domain = tldextract.extract(self.fqdn).domain
+        extracted = tldextract.extract(self.fqdn)
+        self.__domain = f"{extracted.domain}.{extracted.suffix}"
         self.__domain_id = self.__resolveDomainId()
 
     def __resolveDomainId(self) -> int:
         domains = self.__client.get_domains()
-        
+        if (len(domains) == 0):
+            logging.error(f"No dmains found using domain: {self.__domain} obtained from FQDN: {self.fqdn}")
+            return None
         record = next(filter(lambda entry: entry['domain'] == self.__domain, domains))
         if record is not None:
             return record['id']
