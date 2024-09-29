@@ -11,7 +11,6 @@ from .Registry import Registry
 from .Resolve import Resolve
 from .objects import IpData, Auth, DDNSEntry
 from .NetworkAdapter import NetworkAdapter
-from .util import get_domain_from_fqdn
 
 logging.basicConfig(level=logging.INFO)
 
