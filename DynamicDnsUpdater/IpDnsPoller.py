@@ -47,28 +47,35 @@ class IpDnsPoller:
             adapter: NetworkAdapter = NetworkAdapter(entry.interface)
             ipdata = adapter.getIpData()
             if (ipdata.isValid()):
-                self.__validateDnsRecordAgainstIpReceivedAndUpdate(entry.interface, ipdata)
+                self.__validateDnsRecordAgainstIpReceivedAndUpdate(entry, ipdata)
         iterationLock = time.time() + datetime.timedelta(minutes=iteration_delay).seconds
         logging.info("Next automatic check will occur @ {}".format(datetime.datetime.fromtimestamp(iterationLock).strftime("%d.%m.%Y %H:%M")))
         time.sleep(60*iteration_delay)
             
 
-    def __validateDnsRecordAgainstIpReceivedAndUpdate(self, nic: str, ipdata: IpData) -> None:
-        ddnsEntry = next(filter(lambda entry: entry.interface == nic, self.ddnsEntries))
+    def __validateDnsRecordAgainstIpReceivedAndUpdate(self, ddnsEntry: DDNSEntry, ipdata: IpData) -> None:
         if (ddnsEntry.ipv4 == True):
             invalidPointers = self.__find_invalid_pointer4(ipdata.ip, ddnsEntry.domains)
-            for invalidPointer in invalidPointers:
-                registry = Registry(fqdn=invalidPointer, auth=self.auth)
-                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ip)
-                logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
-                registry.update_record(invalidPointer, record)
+            if (len(invalidPointers) > 0):
+                for invalidPointer in invalidPointers:
+                    registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                    record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ip)
+                    logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
+                    registry.update_record(invalidPointer, record)
+            else:
+                indented_string = "\n\t".join(f"{domain}" for domain in ddnsEntry.domains)
+                logging.info(f"All pointers4 ok for\n{indented_string}")
         if (ddnsEntry.ipv6 == True):
             invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
-            for invalidPointer in invalidPointers:
-                registry = Registry(fqdn=invalidPointer, auth=self.auth)
-                record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ipv6)
-                logging.info(f"Preparing record forFQDN {invalidPointer}\n\t -> {record}")
-                registry.update_record(invalidPointer, record)
+            if (len(invalidPointers) > 0):
+                for invalidPointer in invalidPointers:
+                    registry = Registry(fqdn=invalidPointer, auth=self.auth)
+                    record = registry.build_record(fqdn=invalidPointer, ip=ipdata.ipv6)
+                    logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
+                    registry.update_record(invalidPointer, record)
+            else:
+                indented_string = "\n\t".join(f"{domain}" for domain in ddnsEntry.domains)
+                logging.info(f"All pointers6 ok for\n{indented_string}")
 
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:
         invalids: List[str] = []
