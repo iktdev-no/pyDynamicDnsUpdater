@@ -18,7 +18,7 @@ setup(
         "dnspython>=2.4.0",
         "domeneshop>=0.4.3"
     ],
-    version=version.__version__,<
+    version=version.__version__,
     description="""
     A Python library to modify and alter the dns records in according to configuration passed
     """,
