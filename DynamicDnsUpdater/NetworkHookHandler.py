@@ -160,7 +160,7 @@ class NetworkHookHandler:
                     logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
                     registry.update_record(invalidPointer, record)
             else:
-                indented_string = "\n\t".join(f"    {domain}" for domain in ddnsEntry["domains"])
+                indented_string = "\n\t".join(f"    {domain}" for domain in ddnsEntry.domains)
                 logging.info(f"All pointers4 ok for\n{indented_string}")
         if (ddnsEntry.ipv6 == True):
             invalidPointers = self.__find_invalid_pointer6(ipdata.ipv6, ddnsEntry.domains)
@@ -171,7 +171,7 @@ class NetworkHookHandler:
                     logging.info(f"Preparing record for FQDN {invalidPointer}\n\t -> {record}")
                     registry.update_record(invalidPointer, record)
             else:
-                indented_string = "\n\t".join(f"    {domain}" for domain in ddnsEntry["domains"])
+                indented_string = "\n\t".join(f"    {domain}" for domain in ddnsEntry.domains)
                 logging.info(f"All pointers6 ok for\n{indented_string}")
 
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:
