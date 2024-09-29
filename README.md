@@ -22,7 +22,7 @@ Make sure that you run the script with sudo or as root, as the script needs acce
 
 Or you can do the following:
 ```shell
-curl -sSL -o install.sh https://raw.githubusercontent.com/bskjon/pyDynamicDnsUpdater/master/install.sh && sudo bash install.sh
+curl -sSL -o install.sh https://raw.githubusercontent.com/iktdev-no/pyDynamicDnsUpdater/master/install.sh && sudo bash install.sh
 ```
 This will request you to define table name and select interface thrould selection.
 
