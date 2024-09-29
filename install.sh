@@ -338,7 +338,7 @@ fi
 
 
     echo "Creating DRU Service"
-    cat > /etc/systemd/system/dynamic-routing-updater.service <<EOL
+    cat > "/etc/systemd/system/$service_name" <<EOL
 [Unit]
 Description=Dynamic Routing Updater - Table flipper
 
@@ -373,8 +373,7 @@ EOL
 
     systemctl status $service_name
 
-    echo "Done!"
-    journalctl -exfu dynamic-routing-updater
+    journalctl -exfu $service_name
     sudo chmod -R 755 "$install_location"
 
 }
@@ -406,8 +405,6 @@ setup() {
     create_services
 
     echo "Done!"
-    journalctl -exfu dynamic-routing-updater
-    sudo chmod -R 755 $install_location    
 }
 
 
