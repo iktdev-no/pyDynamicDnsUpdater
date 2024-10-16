@@ -10,7 +10,7 @@ import os, sys, time, errno
 
 from .Registry import Registry
 from .Resolve import Resolve
-from .objects import IpData, Auth, DDNSEntry
+from .objects import IpData, Auth, DDNSEntry, LookupResult
 from .NetworkAdapter import NetworkAdapter
 
 logging.basicConfig(level=logging.INFO)
@@ -80,15 +80,15 @@ class IpDnsPoller:
     def __find_invalid_pointer4(self, ip: str, domains: List[str]) -> List[str]:
         invalids: List[str] = []
         for domain in domains:
-            result = self.resolve.lookup4(domain)
-            if (result.ip != ip):
+            result: LookupResult | None = self.resolve.lookup4(domain)
+            if (result != None and result.ip != ip):
                 invalids.append(domain)
         return invalids
     
     def __find_invalid_pointer6(self, ip: str, domains: List[str]) -> List[str]:
         invalids: List[str] = []
         for domain in domains:
-            result = self.resolve.lookup6(domain)
-            if (result.ip != ip):
+            result: LookupResult | None = self.resolve.lookup6(domain)
+            if (result != None and result.ip != ip):
                 invalids.append(domain)
         return invalids
